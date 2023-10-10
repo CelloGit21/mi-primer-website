@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Google Sheet Data</title>
+</head>
+<body>
+    <table id="dataTable">
+        <!-- Table content will be generated here -->
+    </table>
+    <div id="payValues"></div> <!-- Add a container to display Pay values -->
+    <script>
+        // Your JSON data from Google Apps Script
+        const jsonData = [
+  {
+    "PERIOD": 1,
+    "DATE": "01-21-2018",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 2,
+    "DATE": "07-21-2018",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 3,
+    "DATE": "01-21-2019",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 4,
+    "DATE": "07-21-2019",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 5,
+    "DATE": "01-21-2020",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 6,
+    "DATE": "07-21-2020",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 7,
+    "DATE": "01-21-2021",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 8,
+    "DATE": "07-21-2021",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 9,
+    "DATE": "01-21-2022",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 10,
+    "DATE": "07-21-2022",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 11,
+    "DATE": "01-21-2023",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 12,
+    "DATE": "07-21-2023",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 13,
+    "DATE": "01-21-2024",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 14,
+    "DATE": "07-21-2024",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 15,
+    "DATE": "01-21-2025",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 16,
+    "DATE": "07-21-2025",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 17,
+    "DATE": "01-21-2026",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 18,
+    "DATE": "07-21-2026",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 19,
+    "DATE": "01-21-2027",
+    "PAY": 3.475
+  },
+  {
+    "PERIOD": 20,
+    "DATE": "07-21-2027",
+    "PAY": 103.475
+  },
+  {
+    "PERIOD": -1,
+    "DATE": "07-21-2017",
+    "PAY": 3.475
+  }
+];
+
+        // Call the function with your JSON data to generate the table
+        generateTable(jsonData);
+        const table = document.getElementById('dataTable');
+        const filasTotal = table.rows.length;
+        console.log('cant filas = '+filasTotal);
+        const issueDateTexto = table.rows[filasTotal - 1].cells[1].textContent;
+        const matureDateTexto = table.rows[filasTotal - 2].cells[1].textContent;
+        console.log("issue date = "+issueDateTexto+'  maturity date = '+matureDateTexto);
+
+
+        // INPUT A MANOPLA 
+        const rate=0.0695;
+        let PVi=0;
+        let PVtotal=0;
+        const settDate="10-11-2023" 
+        console.log('settDate = ' + settDate);
+        const periodoProxPago = nextPayDate(settDate);
+        const nextPayDateTexto = table.rows[periodoProxPago+1].cells[1].textContent;
+        const lastPayDateTexto = table.rows[periodoProxPago].cells[1].textContent;
+        console.log('last pago = '+ lastPayDateTexto+' <-> prox pago = '+ nextPayDateTexto);   
+        const accruedDays =days360(lastPayDateTexto,settDate);
+        const remainingTillPay=180-accruedDays;
+        console.log('accrued days = '+accruedDays);
+        const fixCoupon = jsonData[jsonData.length - 1].PAY;
+        console.log('fixCoupon = '+fixCoupon);
+        const accruedInterest=accruedDays/180*fixCoupon;
+        console.log('ACCRD = '+accruedInterest);
+          
+        
+
+        // Extract the text content of the last row's second cell (settDate) and the second-to-last row's second cell (matureDate)
+        const num = days360(settDate, matureDateTexto );
+        console.log(num);
+
+        // Loop to print "Pay" values
+        const payValuesContainer = document.getElementById('payValues');
+        
+       presentValue(0);
+
+
+      // CALCULATES PRESENT AT DATE=NEXT PAY DATE 
+      function nextPayDate (settDate){
+        const payDayPeriod=0;
+              for (let i = 0; i < jsonData.length-1; i++) {
+                  const payDate = jsonData[i].DATE;
+                  let deltaDias=days360(settDate,payDate);
+                  if (deltaDias>0) {
+                    let payDayPeriod=i;
+                    console.log('payDayPeriod = '+payDayPeriod);
+                    return payDayPeriod;
+                  }
+
+                  // PVi = (payValue / (Math.pow(1 + (rate / 2), i+1))); // Use Math.pow for exponentiation
+                  // PVtotal=PVtotal+PVi;
+                  // console.log(i+1,payValue, PVi);
+                  
+                  // const payValueElement = document.createElement('p');
+                  // payValueElement.textContent = `Pay ${i + 1}: ${payValue}`;
+                  // payValuesContainer.appendChild(payValueElement);
+              }
+              return payDayPeriod;
+            }
+
+
+
+
+
+
+      // CALCULATES PRESENT AT DATE=NEXT PAY DATE 
+        function presentValue (initialPeriod){
+        for (let i = initialPeriod; i < jsonData.length-1; i++) {
+            const payValue = jsonData[i].PAY;
+            PVi = (payValue / (Math.pow(1 + (rate / 2), i+1))); // Use Math.pow for exponentiation
+            PVtotal=PVtotal+PVi;
+            console.log(i+1,payValue, PVi);
+            
+            const payValueElement = document.createElement('p');
+            payValueElement.textContent = `Pay ${i + 1}: ${payValue}`;
+            payValuesContainer.appendChild(payValueElement);
+        }
+        console.log ('total dio = '+PVtotal);
+      }
+
+      // Function to generate the table
+        function generateTable(data) {
+            const table = document.getElementById('dataTable');
+            const headerRow = table.insertRow();
+            // Create table headers based on JSON keys
+            for (let key in data[0]) {
+                if (data[0].hasOwnProperty(key)) {
+                    const th = document.createElement('th');
+                    th.textContent = key;
+                    headerRow.appendChild(th);
+                }
+            }
+
+            // Populate the table with data
+            for (let i = 0; i < data.length; i++) {
+                const row = table.insertRow();
+                for (let key in data[i]) {
+                    if (data[i].hasOwnProperty(key)) {
+                        const cell = row.insertCell();
+                        cell.textContent = data[i][key];
+                    }
+                }
+            }
+        }
+
+       //---- DAYS360------------------------------------------------------------------ \\
+      function days360(date1, date2) {
+        
+            const dateParts1 = date1.split('-').map(Number);
+            const dateParts2 = date2.split('-').map(Number);
+
+            const month1 = dateParts1[0];
+            const day1 = dateParts1[1];
+            const year1 = dateParts1[2];
+
+            const month2 = dateParts2[0];
+            const day2 = dateParts2[1];
+            const year2 = dateParts2[2];
+
+            const d1 = month1 * 30 + Math.min(day1, 30);
+            const d2 = month2 * 30 + Math.min(day2, 30);
+
+         return (year2 - year1) * 360 + (d2 - d1);
+      }
+
+</script>
+</body>
+</html>
